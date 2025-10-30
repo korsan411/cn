@@ -228,3 +228,149 @@ class SimulationSystem {
   createToolModel() {
     const scene = threeJSHandler.scenes.get(this.sceneId);
     if (!scene) return;
+
+    // إزالة الأداة القديمة
+    if (this.tool) {
+      scene.remove(this.tool);
+    }
+
+    const machineType = machineSettings.currentMachine;
+    this.tool = threeJSHandler.createToolModel(machineType);
+    scene.add(this.tool);
+
+    // تحديث موضع الأداة للنقطة الأولى
+    this.updateToolPosition(0);
+  }
+
+  play() {
+    if (this.isPlaying || this.pathPoints.length === 0) return;
+
+    this.isPlaying = true;
+    this.updateStatus('جاري التشغيل');
+    this.animate();
+    showToast('بدأت المحاكاة');
+  }
+
+  pause() {
+    this.isPlaying = false;
+    if (this.animationFrame) {
+      cancelAnimationFrame(this.animationFrame);
+      this.animationFrame = null;
+    }
+    this.updateStatus('متوقف');
+    showToast('أقفلت المحاكاة مؤقتاً');
+  }
+
+  reset() {
+    this.pause();
+    this.currentIndex = 0;
+    this.elapsedTime = 0;
+    this.updateToolPosition(0);
+    this.updateProgress(0);
+    this.updateStatus('جاهز');
+    showToast('تم إعادة المحاكاة');
+  }
+
+  animate() {
+    if (!this.isPlaying) return;
+
+    const step = () => {
+      if (!this.isPlaying) return;
+
+      this.currentIndex += this.speed;
+      
+      if (this.currentIndex >= this.pathPoints.length) {
+        this.currentIndex = this.pathPoints.length - 1;
+        this.updateToolPosition(this.currentIndex);
+        this.updateProgress(100);
+        this.updateStatus('مكتمل');
+        this.isPlaying = false;
+        showToast('اكتملت المحاكاة');
+        return;
+      }
+
+      this.updateToolPosition(this.currentIndex);
+      
+      const progress = ((this.currentIndex + 1) / this.pathPoints.length) * 100;
+      this.updateProgress(progress);
+      
+      this.animationFrame = requestAnimationFrame(step);
+    };
+
+    this.animationFrame = requestAnimationFrame(step);
+  }
+
+  updateToolPosition(index) {
+    if (!this.tool || this.pathPoints.length === 0) return;
+
+    const i = Math.floor(index);
+    const point = this.pathPoints[i];
+    
+    if (point) {
+      // تحويل الإحداثيات لنظام Three.js
+      this.tool.position.set(point.x / 10, -point.z, point.y / 10);
+    }
+  }
+
+  updateProgress(percentage) {
+    const progressElement = document.getElementById('simProgress');
+    if (progressElement) {
+      progressElement.textContent = percentage.toFixed(1) + '%';
+    }
+  }
+
+  updateStatus(status) {
+    const statusElement = document.getElementById('simStatus');
+    if (statusElement) {
+      statusElement.textContent = status;
+    }
+  }
+
+  cleanup() {
+    this.pause();
+    
+    const scene = threeJSHandler.scenes.get(this.sceneId);
+    if (scene) {
+      if (this.tool) {
+        scene.remove(this.tool);
+        this.tool = null;
+      }
+      if (this.toolPath) {
+        scene.remove(this.toolPath);
+        this.toolPath = null;
+      }
+    }
+    
+    this.pathPoints = [];
+    this.currentIndex = 0;
+  }
+
+  exportAnimation() {
+    if (this.pathPoints.length === 0) {
+      showToast('لا توجد محاكاة للتصدير');
+      return;
+    }
+
+    const animationData = {
+      points: this.pathPoints,
+      machineType: machineSettings.currentMachine,
+      settings: machineSettings.getCurrentSettings(),
+      timestamp: new Date().toISOString()
+    };
+
+    const dataStr = JSON.stringify(animationData, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `simulation_${new Date().toISOString().slice(0, 19).replace(/[:.]/g, '-')}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    showToast('تم تصدير بيانات المحاكاة');
+  }
+}
+
+// إنشاء instance عالمي
+window.simulationSystem = new SimulationSystem();
