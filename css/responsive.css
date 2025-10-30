@@ -1,0 +1,58 @@
+@media (max-width: 1100px) { 
+  .grid { 
+    grid-template-columns: 1fr;
+  } 
+}
+
+@media (min-width: 900px) {
+  .tab-buttons { 
+    grid-template-columns: repeat(3, 1fr); 
+  }
+}
+
+@media (max-width: 899px) {
+  .tab-buttons { 
+    grid-template-columns: repeat(2, 1fr); 
+  }
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 8px;
+    margin: 8px;
+  }
+  
+  header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .button-row {
+    flex-direction: column;
+  }
+  
+  .adv-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .adv-input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  #cnc-debug-overlay {
+    width: 96vw;
+    left: 2vw;
+  }
+  
+  .panel {
+    padding: 12px;
+  }
+  
+  .section-title {
+    font-size: 1rem;
+  }
+}
