@@ -1,520 +1,61 @@
 <!doctype html>
-<!-- CncAi — Version 2.5.0 | All Improvements Batch | October 2025 -->
-<!-- CncAi — Version 2.4.7 | Clean Debug System | October 2025 -->
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>CNC AI — CNC Router & Laser Engraving & 3D Printing</title>
 
-  <!-- مكتبات -->
+  <!-- المكتبات الأساسية -->
   <script src="https://docs.opencv.org/4.8.0/opencv.js" async></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
-  
-  <!-- Three.js r170 + SVG/DXF loaders -->
-  <script src="https://unpkg.com/three@0.170.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.170.0/examples/js/loaders/SVGLoader.js"></script>
-  <script src="https://unpkg.com/three@0.170.0/examples/js/loaders/DXFLoader.js"></script>
 
-  <!-- ملفات CSS -->
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="responsive-tabs.css">
-  <link rel="stylesheet" href="debug-overlay.css">
-  <link rel="stylesheet" href="advanced-machine.css">
+  <!-- ملفات التطبيق -->
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/responsive.css">
 </head>
 <body>
+  <!-- هيكل التطبيق الأساسي -->
   <div class="app">
     <header>
       <h1>CNC AI — CNC Router & Laser Engraving & 3D Printing</h1>
       <div id="cvState">
-        <span class="loading" style="display:inline-block;width:16px;height:16px;border:3px solid #f3f3f3;border-top:3px solid #06b6d4;border-radius:50%;animation:spin 1s linear infinite;margin-right:8px;"></span>
-        <span class="version-string" style="margin-left:10px;color:#9ca3af;font-size:0.9rem;">CncAi — النسخة المستقرة 2.2d</span>
+        <span class="loading"></span>
+        <span class="version-string">CncAi — النسخة المستقرة 2.5.0</span>
         جاري تحميل OpenCV...
       </div>
     </header>
 
     <div class="grid">
-      <!-- LEFT panel -->
-      <div class="panel">
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input id="fileInput" type="file" accept="image/*"/>
-          <label class="file-input-label" for="fileInput" style="display:inline-block;padding:8px 12px;background:#1e293b;border-radius:6px;color:#e6eef6;cursor:pointer;border:1px dashed #334155">📁 اختر صورة</label>
-          <div style="flex:1"></div>
-
-          <label for="edgeMode" style="font-weight:normal;color:#9bb0c8">Edge Mode:</label>
-          <select id="edgeMode" style="width:140px">
-            <option value="auto">Canny (عادي)</option>
-            <option value="sobel">Sobel (دقيق)</option>
-            <option value="laplace">Laplacian (ناعـم)</option>
-          </select>
-        </div>
-
-        <!-- Edge sensitivity slider -->
-        <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-          <label style="margin:0;color:#9bb0c8">حساسية الحواف:</label>
-          <input id="edgeSensitivity" type="range" min="0.1" max="1.0" step="0.05" value="0.33" style="flex:1">
-          <div id="edgeValue" style="min-width:44px;text-align:center;color:#cfeaf2">0.33</div>
-        </div>
-
-        <!-- ========== قسم ملفات STL و SVG و DXF ========== -->
-        <div class="file-format-section">
-          <div class="file-format-title">
-            <span>📁</span>
-            تحميل ملفات STL و SVG و DXF
-            <span>📁</span>
-          </div>
-          <div class="file-format-buttons" id="fileFormatButtons">
-            <button data-format="stl" title="تحميل ملف STL (ثلاثي الأبعاد)">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <div>STL</div>
-                <div style="font-size:0.8rem;color:#9bb0c8">نموذج ثلاثي الأبعاد</div>
-              </div>
-            </button>
-            <button data-format="svg" title="تحميل ملف SVG (رسوم متجهة)">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <div>SVG</div>
-                <div style="font-size:0.8rem;color:#9bb0c8">رسوم متجهة</div>
-              </div>
-            </button>
-            <button data-format="dxf" title="تحميل ملف DXF (رسم CAD)">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <div>DXF</div>
-                <div style="font-size:0.8rem;color:#9bb0c8">رسم CAD</div>
-              </div>
-            </button>
-          </div>
-          <div class="small-meta" style="text-align: center; margin-top: 8px;">
-            يمكن تحميل ملفات STL للطباعة ثلاثية الأبعاد، وملفات SVG/DXF للتحويل إلى G-code
-          </div>
-        </div>
-
-        <!-- ========== أزرار الـ Colormap الثابتة ========== -->
-        <div class="colormap-section">
-          <div class="colormap-title">
-            <span>🎨</span>
-            خيارات تدرج الألوان
-            <span>🎨</span>
-          </div>
-          <div class="colormap-buttons" id="colormapButtons">
-            <button data-map="jet" class="active" title="Jet - الأزرق إلى الأحمر">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <div>Jet</div>
-                <div style="width:100%;height:4px;background:linear-gradient(90deg,#0000ff,#00ffff,#ffff00,#ff0000);border-radius:2px"></div>
-              </div>
-            </button>
-            <button data-map="hot" title="Hot - الأسود إلى الأحمر إلى الأصفر">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <div>Hot</div>
-                <div style="width:100%;height:4px;background:linear-gradient(90deg,#000000,#ff0000,#ffff00,#ffffff);border-radius:2px"></div>
-              </div>
-            </button>
-            <button data-map="cool" title="Cool - السماوي إلى الأرجواني">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <div>Cool</div>
-                <div style="width:100%;height:4px;background:linear-gradient(90deg,#00ffff,#ff00ff);border-radius:2px"></div>
-              </div>
-            </button>
-            <button data-map="gray" title="Gray - التدرج الرمادي">
-              <div style="display:flex;flex-direction:column;align-items:center;gap:4px">
-                <div>Gray</div>
-                <div style="width:100%;height:4px;background:linear-gradient(90deg,#000000,#ffffff);border-radius:2px"></div>
-              </div>
-            </button>
-          </div>
-          <div class="small-meta" style="text-align: center; margin-top: 8px;">
-            التغيير يطبق على: Heatmap • Top View • Contours • كل المعاينات
-          </div>
-        </div>
-
-        <div class="tab-buttons" role="tablist">
-          <button data-tab="original" class="active">🖼️ الأصلية</button>
-          <button data-tab="heatmap">🔥 Heatmap</button>
-          <button data-tab="contour">📐 Contours</button>
-          <button data-tab="topview">🔝 Top View</button>
-          <button data-tab="threed">🧊 3D Models</button>
-          <button data-tab="vector2d">📐 2D Vector Preview</button>
-          <button data-tab="simulation">🎬 المحاكاة</button>
-        </div>
-
-        <div id="original" class="tab-content active">
-          <div class="canvas-placeholder" id="originalPlaceholder">الصورة الأصلية ستظهر هنا</div>
-          <canvas id="canvasOriginal" style="display:none;"></canvas>
-        </div>
-
-        <div id="heatmap" class="tab-content">
-          <div class="canvas-placeholder" id="heatmapPlaceholder">Heatmap ستظهر هنا</div>
-          <canvas id="canvasHeatmap" style="display:none;"></canvas>
-        </div>
-
-        <div id="contour" class="tab-content">
-          <div class="canvas-placeholder" id="contourPlaceholder">Contours ستظهر هنا</div>
-          <canvas id="canvasContour" style="display:none;"></canvas>
-          <div class="small-meta">تبديل وضع كشف الحواف أو تحريك حساسية الحواف يحدث إعادة معالجة تلقائية</div>
-        </div>
-
-        <div id="topview" class="tab-content">
-          <div id="topViewContainer">
-            <canvas id="topView"></canvas>
-            <div id="topLegend" title="عمق النقش — الألوان فقط"></div>
-          </div>
-          <div class="small-meta">معاينة من الأعلى للعمق المتوقع بعد تنفيذ G-code (الألوان تتبع اختيار Colormap)</div>
-        </div>
-
-        <div id="threed" class="tab-content">
-          <div class="canvas-placeholder" id="threedPlaceholder">الموديل ثلاثي الأبعاد سيظهر هنا</div>
-          <div id="threeDContainer" style="display:none;">
-            <canvas id="canvas3D"></canvas>
-          </div>
-        </div>
-
-        <div id="vector2d" class="tab-content">
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            <div class="canvas-placeholder" id="vectorPlaceholder">اسحب أو ارفع ملف SVG أو DXF هنا للمعاينة</div>
-            <canvas id="vectorCanvas" style="display:none;width:100%;height:420px;background:transparent;"></canvas>
-            <div style="display:flex;gap:8px;justify-content:center;margin-top:8px">
-              <button id="vectorZoomIn" class="secondary">🔍+</button>
-              <button id="vectorZoomOut" class="secondary">🔍−</button>
-              <button id="vectorFit" class="secondary">🎯 ملء الشاشة</button>
-            </div>
-          </div>
-        </div>
-
-        <div id="simulation" class="tab-content">
-          <div id="threeContainer">
-            <div class="canvas-placeholder" id="simulationPlaceholder">المحاكاة ستظهر هنا بعد توليد G-code</div>
-          </div>
-        </div>
+      <!-- اللوحة اليسرى -->
+      <div class="panel left-panel">
+        <!-- محتوى اللوحة اليسرى -->
       </div>
 
-      <!-- RIGHT panel -->
-      <div class="panel">
-        <h3>⚙️ إعدادات الماكينة</h3>
-
-        <!-- Advanced Machine Settings -->
-        <div id="adv-machine-card">
-          <div id="adv-machine-toggle" aria-expanded="false">
-            <div style="font-weight:700;color:#dff8ff">⚙️ الإعدادات المتقدمة للماكينة</div>
-            <div id="adv-arrow" style="color:#9bb0c8">▼</div>
-          </div>
-          <div id="adv-machine-body" role="region" aria-hidden="true">
-            <div class="adv-row">
-              <label>Origin X</label><input id="adv_origin_x" class="adv-input" type="number" step="0.01" value="0">
-              <label>Origin Y</label><input id="adv_origin_y" class="adv-input" type="number" step="0.01" value="0">
-              <label>Origin Z</label><input id="adv_origin_z" class="adv-input" type="number" step="0.01" value="0">
-            </div>
-            <div class="adv-row">
-              <label>Calib X</label><input id="adv_cal_x" class="adv-slider" type="range" min="-1" max="1" step="0.01" value="0">
-              <span id="adv_cal_x_val" style="min-width:36px;text-align:center;color:#a8e9ff">0</span>
-              <label>Calib Y</label><input id="adv_cal_y" class="adv-slider" type="range" min="-1" max="1" step="0.01" value="0">
-              <span id="adv_cal_y_val" style="min-width:36px;text-align:center;color:#a8e9ff">0</span>
-            </div>
-            <div class="adv-row">
-              <label>Reverse X</label><input id="adv_rev_x" type="checkbox">
-              <label>Reverse Y</label><input id="adv_rev_y" type="checkbox">
-            </div>
-            <div class="adv-row">
-              <label>Execution</label>
-              <select id="adv_exec" class="adv-input">
-                <option value="raster">Raster</option>
-                <option value="contour">Contour</option>
-              </select>
-              <label>Delay (ms)</label><input id="adv_delay" class="adv-input" type="number" min="0" value="0" step="10">
-            </div>
-            <div class="adv-actions">
-              <button id="adv_reset" class="dbg-btn">إرجاع الإعدادات الافتراضية</button>
-              <div style="flex:1"></div>
-              <button id="adv_save" class="dbg-btn">حفظ</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Machine Category Selection -->
-        <label for="machineCategory">نوع الماكينة الرئيسي</label>
-        <select id="machineCategory">
-          <option value="router">CNC Router (نحت خشب)</option>
-          <option value="laser">Laser Engraver (نقش ليزر)</option>
-          <option value="threed">3D Printer (طباعة ثلاثية الأبعاد)</option>
-        </select>
-
-        <!-- CNC Router Settings -->
-        <div id="routerSettings" class="machine-settings">
-          <h4 class="router-specific">🔄 إعدادات CNC Router</h4>
-          
-          <label for="workWidth">عرض العمل (سم)</label>
-          <input id="workWidth" type="number" value="30" step="0.1" min="1" max="200"/>
-          <div class="small-meta" id="widthMm">300.0 مم</div>
-
-          <label for="workHeight">ارتفاع العمل (سم)</label>
-          <input id="workHeight" type="number" value="20" step="0.1" min="1" max="200"/>
-          <div class="small-meta" id="heightMm">200.0 مم</div>
-
-          <label for="workDepth">عمق العمل (مم)</label>
-          <input id="workDepth" type="number" value="3.0" step="0.1" min="0.1" max="50"/>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label for="originX">نقطة الأصل X (سم)</label>
-              <input id="originX" type="number" value="0" step="0.1"/>
-            </div>
-            <div>
-              <label for="originY">نقطة الأصل Y (سم)</label>
-              <input id="originY" type="number" value="0" step="0.1"/>
-            </div>
-          </div>
-          <div style="margin-top:6px"><button id="btnCenterOrigin" class="secondary">🎯 توسيط نقطة الأصل</button></div>
-
-          <hr style="border-color:#122433;margin:12px 0"/>
-
-          <label for="feedRate">سرعة التغذية (مم/دقيقة)</label>
-          <input id="feedRate" type="number" value="800" min="10" max="5000"/>
-          <label for="safeZ">ارتفاع الأمان (مم)</label>
-          <input id="safeZ" type="number" value="5" step="0.1" min="0" max="100"/>
-
-          <label for="scanDir">اتجاه المسارات (Raster)</label>
-          <select id="scanDir">
-            <option value="x">أفقي (X)</option>
-            <option value="y">رأسي (Y)</option>
-          </select>
-
-          <label for="stepOver">خطوة المسح (مم)</label>
-          <input id="stepOver" type="number" value="5" step="0.1" min="0.1" max="50"/>
-          <label for="maxDepth">أقصى عمق (مم)</label>
-          <input id="maxDepth" type="number" value="3.0" step="0.1" min="0.1" max="50"/>
-
-          <!-- Fixed Z + Invert Z -->
-          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-            <label style="font-weight:normal;"><input id="fixedZ" type="checkbox" /> استخدام Z ثابت</label>
-            <input id="fixedZValue" type="number" value="-1.0" step="0.1" style="width:120px" />
-          </div>
-          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-            <label style="font-weight:normal;"><input id="invertZ" type="checkbox" /> عكس Z</label>
-            <div style="flex:1"></div>
-            <label style="font-weight:normal;color:#9bb0c8">لون الخشب:</label>
-            <select id="woodColor" style="width:140px">
-              <option value="#deb887">خشب فاتح</option>
-              <option value="#a0522d" selected>خشب متوسط</option>
-              <option value="#d2b48c">بيج</option>
-              <option value="#8b5a2b">ماهوجني</option>
-            </select>
-          </div>
-
-          <div class="button-group">
-            <div class="button-row">
-              <button id="btnGen" class="primary">⚡ توليد G-code (Raster)</button>
-              <button id="btnQuick" class="secondary">🧪 اختبار سريع</button>
-            </div>
-
-            <div style="margin-top:8px">
-              <label for="contourMode">نطاق الحواف (Contour)</label>
-              <select id="contourMode">
-                <option value="outer">الخارجية فقط</option>
-                <option value="all">كل الحواف</option>
-              </select>
-              <div style="height:8px"></div>
-              <div class="button-row">
-                <button id="btnContour" class="secondary">🌀 توليد G-code (Contour)</button>
-                <button id="btnDownload" class="secondary">💾 تحميل G-code</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Laser Engraver Settings -->
-        <div id="laserSettings" class="machine-settings" style="display:none;">
-          <h4 class="laser-specific">⚡ إعدادات Laser Engraver</h4>
-          
-          <label for="laserWorkWidth">عرض العمل (سم)</label>
-          <input id="laserWorkWidth" type="number" value="30" step="0.1" min="1" max="200"/>
-          <div class="small-meta" id="laserWidthMm">300.0 مم</div>
-
-          <label for="laserWorkHeight">ارتفاع العمل (سم)</label>
-          <input id="laserWorkHeight" type="number" value="20" step="0.1" min="1" max="200"/>
-          <div class="small-meta" id="laserHeightMm">200.0 مم</div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label for="laserOriginX">نقطة الأصل X (سم)</label>
-              <input id="laserOriginX" type="number" value="0" step="0.1"/>
-            </div>
-            <div>
-              <label for="laserOriginY">نقطة الأصل Y (سم)</label>
-              <input id="laserOriginY" type="number" value="0" step="0.1"/>
-            </div>
-          </div>
-          <div style="margin-top:6px"><button id="btnLaserCenterOrigin" class="secondary">🎯 توسيط نقطة الأصل</button></div>
-
-          <!-- Laser Edge Detection Settings -->
-          <div class="laser-edge-settings">
-            <label for="laserEdgeMode">نمط كشف الحواف للليزر</label>
-            <select id="laserEdgeMode">
-              <option value="canny">Canny (عادي)</option>
-              <option value="adaptive">Adaptive Threshold (للنقش)</option>
-              <option value="morphological">Morphological (للتفاصيل الدقيقة)</option>
-              <option value="gradient">Gradient-Based (للتدرجات)</option>
-            </select>
-            <div class="laser-mode-description" id="laserModeDesc">
-              Adaptive Threshold - ممتاز للصور ذات الإضاءة غير المتجانسة
-            </div>
-
-            <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-              <label style="margin:0;color:#9bb0c8">دقة الليزر:</label>
-              <input id="laserDetail" type="range" min="1" max="10" value="5" step="1" style="flex:1">
-              <div id="laserDetailValue" style="min-width:44px;text-align:center;color:#ff4444">5</div>
-            </div>
-          </div>
-
-          <div style="margin-top: 8px;">
-            <button id="btnRedetectLaser" class="secondary">🔄 إعادة كشف حواف الليزر</button>
-          </div>
-
-          <hr style="border-color:#ff4444;margin:12px 0"/>
-
-          <!-- Laser Power -->
-          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-            <label style="margin:0;color:#9bb0c8">قوة الليزر:</label>
-            <input id="laserPower" type="range" min="0" max="100" value="80" step="1" style="flex:1">
-            <div id="laserPowerValue" style="min-width:44px;text-align:center;color:#ff4444">80%</div>
-          </div>
-
-          <label for="laserMode">وضع الليزر</label>
-          <select id="laserMode">
-            <option value="engrave">نقش (Grayscale)</option>
-            <option value="cut">قص (Contour)</option>
-            <option value="combine">نقش + قص</option>
-          </select>
-
-          <label for="laserSpeed">سرعة الليزر (مم/دقيقة)</label>
-          <input id="laserSpeed" type="number" value="2000" min="100" max="10000"/>
-
-          <label for="laserPasses">عدد المرات</label>
-          <input id="laserPasses" type="number" value="1" min="1" max="10"/>
-
-          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-            <label style="font-weight:normal;">
-              <input id="laserDynamic" type="checkbox" checked /> 
-              قوة ديناميكية (حسب الظلام)
-            </label>
-          </div>
-
-          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
-            <label style="font-weight:normal;">
-              <input id="laserAirAssist" type="checkbox" /> 
-              Air Assist
-            </label>
-          </div>
-
-          <!-- Laser Buttons -->
-          <div class="button-group">
-            <div class="button-row">
-              <button id="btnLaserEngrave" class="primary" style="background:#ff4444;">⚡ توليد كود ليزر (نقش)</button>
-              <button id="btnLaserQuick" class="secondary">🧪 نقش سريع</button>
-            </div>
-            <div class="button-row">
-              <button id="btnLaserCut" class="secondary">✂️ توليد كود ليزر (قص)</button>
-              <button id="btnLaserDownload" class="secondary">💾 تحميل كود الليزر</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3D Printer Settings -->
-        <div id="threedSettings" class="machine-settings" style="display:none;">
-          <h4 class="threed-specific">🧊 إعدادات النماذج ثلاثية الأبعاد</h4>
-          
-          <label for="threedFileInput">تحميل ملف 3D (STL, OBJ, etc.)</label>
-          <input id="threedFileInput" type="file" accept=".stl,.obj,.3ds,.dae,.ply" style="margin-bottom:12px"/>
-          
-          <label for="threedWorkWidth">عرض العمل (سم)</label>
-          <input id="threedWorkWidth" type="number" value="30" step="0.1" min="1" max="200"/>
-          <div class="small-meta" id="threedWidthMm">300.0 مم</div>
-
-          <label for="threedWorkHeight">ارتفاع العمل (سم)</label>
-          <input id="threedWorkHeight" type="number" value="20" step="0.1" min="1" max="200"/>
-          <div class="small-meta" id="threedHeightMm">200.0 مم</div>
-
-          <label for="threedWorkDepth">عمق العمل (مم)</label>
-          <input id="threedWorkDepth" type="number" value="10" step="0.1" min="0.1" max="100"/>
-          <div class="small-meta" id="threedDepthMm">10.0 مم</div>
-
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <div>
-              <label for="threedOriginX">نقطة الأصل X (سم)</label>
-              <input id="threedOriginX" type="number" value="0" step="0.1"/>
-            </div>
-            <div>
-              <label for="threedOriginY">نقطة الأصل Y (سم)</label>
-              <input id="threedOriginY" type="number" value="0" step="0.1"/>
-            </div>
-          </div>
-          <div style="margin-top:6px"><button id="btnThreedCenterOrigin" class="secondary">🎯 توسيط نقطة الأصل</button></div>
-
-          <hr style="border-color:#10b981;margin:12px 0"/>
-
-          <label for="threedLayerHeight">ارتفاع الطبقة (مم)</label>
-          <input id="threedLayerHeight" type="number" value="0.2" step="0.05" min="0.05" max="1.0"/>
-
-          <label for="threedFillDensity">كثافة الحشو (%)</label>
-          <input id="threedFillDensity" type="number" value="20" step="5" min="0" max="100"/>
-
-          <label for="threedPrintSpeed">سرعة الطباعة (مم/ث)</label>
-          <input id="threedPrintSpeed" type="number" value="50" step="5" min="10" max="200"/>
-
-          <label for="threedInfillPattern">نمط الحشو</label>
-          <select id="threedInfillPattern">
-            <option value="rectilinear">Rectilinear</option>
-            <option value="grid">Grid</option>
-            <option value="triangles">Triangles</option>
-            <option value="honeycomb">Honeycomb</option>
-          </select>
-
-          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
-            <label style="font-weight:normal;">
-              <input id="threedSupport" type="checkbox" /> 
-              دعم (Support)
-            </label>
-            <div style="flex:1"></div>
-            <label style="font-weight:normal;">
-              <input id="threedRaft" type="checkbox" /> 
-              رافدة (Raft)
-            </label>
-          </div>
-
-          <!-- 3D Buttons -->
-          <div class="button-group">
-            <div class="button-row">
-              <button id="btnSliceModel" class="primary" style="background:#10b981;">⚡ توليد G-code (3D)</button>
-              <button id="btnPreviewLayers" class="secondary">👁️ معاينة الطبقات</button>
-            </div>
-            <button id="btnDownload3D" class="secondary">💾 تحميل G-code 3D</button>
-          </div>
-        </div>
-
-        <div id="estTime" style="margin-top:12px;color:#9bb0c8;text-align:center;padding:8px;background:#0f172a;border-radius:6px"></div>
-
-        <label for="gcodeOut" style="margin-top:12px">📄 مخرجات G-code</label>
-        <textarea id="gcodeOut" readonly placeholder="سيظهر G-code هنا بعد التوليد..." style="height:180px;background:#021024;color:#cfeaf2;border-radius:8px;padding:10px;"></textarea>
-
+      <!-- اللوحة اليمنى -->
+      <div class="panel right-panel">
+        <!-- محتوى اللوحة اليمنى -->
       </div>
     </div>
   </div>
 
-  <!-- Progress Overlay -->
+  <!-- المكونات العامة -->
   <div class="progress-overlay" id="progressOverlay">
     <div class="progress-spinner"></div>
     <div class="progress-text" id="progressText">جاري المعالجة...</div>
   </div>
 
-  <!-- Toast -->
   <div id="toast"></div>
 
-  <!-- Clean Debug System -->
-  <div id="cnc-debug-overlay" class="collapsed" aria-hidden="true" aria-live="polite">
+  <!-- نظام التصحيح -->
+  <div id="cnc-debug-overlay" class="collapsed">
     <div id="cnc-debug-header">
-      <div style="display:flex;align-items:center;gap:8px;">
+      <div class="debug-title">
         <div id="cnc-debug-title">CncAi Debug</div>
-        <small id="cnc-debug-count" style="color:#9bb0c8">0</small>
+        <small id="cnc-debug-count">0</small>
       </div>
       <div id="cnc-debug-controls">
         <button id="cnc-debug-copy" title="Copy logs">📋</button>
@@ -527,15 +68,18 @@
 
   <button id="cnc-debug-btn" aria-label="Open debug">🐞</button>
 
-  <!-- ملفات JavaScript -->
-  <script src="responsive-tabs.js"></script>
-  <script src="gcode-library.js"></script>
-  <script src="task-manager.js"></script>
-  <script src="safe-delete.js"></script>
-  <script src="advanced-machine.js"></script>
-  <script src="debug-overlay.js"></script>
-  <script src="main.js"></script>
-  <script src="3d-viewer.js"></script>
-  <script src="vector-preview.js"></script>
+  <!-- تحميل السكريبتات بترتيب صحيح -->
+  <script src="js/utils.js"></script>
+  <script src="js/task-manager.js"></script>
+  <script src="js/memory-manager.js"></script>
+  <script src="js/input-validator.js"></script>
+  <script src="js/gcode-library.js"></script>
+  <script src="js/opencv-handler.js"></script>
+  <script src="js/threejs-handler.js"></script>
+  <script src="js/machine-settings.js"></script>
+  <script src="js/file-handlers.js"></script>
+  <script src="js/simulation.js"></script>
+  <script src="js/debug-system.js"></script>
+  <script src="js/main.js"></script>
 </body>
 </html>
